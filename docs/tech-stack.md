@@ -2,7 +2,7 @@
 
 - **Trạng thái:** Đã chọn cho MVP.
 - **Ngày chốt:** 01/11/2026.
-- **Tài liệu nghiệp vụ:** [AI Integration cho hỗ trợ người dùng và tổng hợp issue nghiệp vụ](ai-integration-support-nghiep-vu.md).
+- **Tài liệu nghiệp vụ:** [AI Integration cho hỗ trợ người dùng và tổng hợp issue nghiệp vụ](nghiep-vu.md).
 
 ## Thành phần được chọn
 
@@ -14,7 +14,7 @@
 | Tìm kiếm tương tự | pgvector trên PostgreSQL | Tìm bản tóm tắt chức năng đã xuất bản, mẫu hỏi đáp và phản ánh Zalo; lọc theo quyền, phiên bản đang chạy và độ tin cậy. |
 | Lưu ảnh hướng dẫn | Object storage tương thích S3 | Lưu ảnh gắn với mẫu trả lời; PostgreSQL giữ metadata, quyền và phiên bản ảnh. |
 | Job định kỳ | Spring Scheduler | Đồng bộ source/ERD theo thay đổi, tạo bản tóm tắt chức năng ngoài luồng chat; rà soát việc tồn và tác vụ theo lịch. |
-| Giao diện web | Next.js + TypeScript | User dùng AI chat; admin dùng AI chat, Vấn đề, Kho tri thức và Cấu hình. |
+| Giao diện web | Next.js + TypeScript | User có Trợ lí thông minh và Vấn đề của mình; technician có thêm Kho tri thức và xử lý toàn bộ vấn đề; admin có toàn quyền và Cấu hình. |
 | Đóng gói triển khai | Docker | Đóng gói các thành phần ứng dụng và môi trường chạy. |
 
 ## Nguyên tắc triển khai MVP
@@ -32,10 +32,26 @@
 
 ## Phân quyền và các luồng chính
 
-- `user`: chỉ sử dụng AI chat, gồm lịch sử phiên và mục **Vấn đề của tôi** ngay trong chat. User xem phản ánh của mình, gửi đính chính khi vấn đề chưa hoàn tất, và rút phản ánh khi đội chưa bắt đầu xử lý.
-- `admin`: sử dụng AI chat, Vấn đề, Kho tri thức và Cấu hình.
+- `user`: dùng hai tab **Trợ lí thông minh** và **Vấn đề**, gồm lịch sử phiên riêng và phản ánh do chính mình gửi. User xem phản ánh của mình, gửi đính chính khi vấn đề chưa hoàn tất, và rút phản ánh khi đội chưa bắt đầu xử lý.
+- `technician`: dùng Trợ lí thông minh, quản lý Vấn đề và soạn Kho tri thức; không duyệt tri thức hay thay đổi Cấu hình.
+- `admin`: toàn quyền Trợ lí thông minh, Vấn đề, Kho tri thức và Cấu hình; duyệt và cho hết hiệu lực tri thức.
 - Backend phải thực thi quyền với API và nguồn dữ liệu; ẩn menu ở frontend chỉ là giao diện. Mọi thao tác xem/đính chính/rút phản ánh cần kiểm tra `userId` của người gửi tại backend.
 - Vấn đề chỉ nhận phản ánh từ AI chat sau khi user đồng ý gửi và nội dung qua bộ lọc; tin Zalo được thu thập, lọc và phân loại theo luồng riêng. Lưu nguồn riêng để BA/kỹ thuật viên đối chiếu. Một issue có thể gộp nhiều phản ánh; đính chính và rút chỉ tác động tới phản ánh của user đó. Nội dung gốc và lịch sử thay đổi luôn được giữ.
+
+
+### Ma trận quyền
+
+| Chức năng | admin | technician | user |
+|---|---|---|---|
+| Trợ lí thông minh | Có, phiên riêng | Có, phiên riêng | Có, phiên riêng |
+| Vấn đề | Toàn bộ | Toàn bộ, phân công và xử lý | Chỉ phản ánh do chính mình tạo/gửi |
+| Kho tri thức | Xem, soạn, duyệt, hết hiệu lực | Xem, soạn/sửa bản nháp; sửa mẫu đã duyệt phải chờ duyệt lại | Không |
+| Cấu hình, đặt lại demo | Có | Không | Không |
+| Thu thập Zalo | Có | Có | Không |
+
+User có đúng hai tab **Trợ lí thông minh** và **Vấn đề**. Tab Vấn đề hiển thị nội dung riêng đã gửi, trạng thái, đính chính và rút phản ánh theo quy tắc hiện hành. Không hiển thị tóm tắt nội bộ, lịch sử xử lý nội bộ, dữ liệu Zalo hoặc phản ánh của người khác dù được gộp cùng issue. Quyền sở hữu lấy từ danh tính đăng nhập và trường người tạo/người gửi; không suy ra từ việc biết mã issue hoặc có liên kết tới hội thoại.
+
+Demo HTML dùng bộ chọn tài khoản và localStorage để minh họa; không phải cơ chế bảo mật. Khi triển khai thật, Spring Boot phải kiểm tra vai trò, quyền sở hữu tại mọi API và truy vấn dữ liệu; backend xác định người tạo, không nhận danh tính do client tự khai. Kiểm thử trường hợp đổi ID phản ánh/issue sang tài khoản khác, gộp nhiều phản ánh và gọi trực tiếp API bị cấm.
 
 ## Phụ thuộc cần xác minh
 

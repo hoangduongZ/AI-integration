@@ -1,13 +1,28 @@
 # AI Integration cho hỗ trợ người dùng và tổng hợp issue nghiệp vụ
 
-- **Phiên bản tài liệu:** 1.5
+- **Phiên bản tài liệu:** 1.6
 - **Ngày soạn:** 01/11/2026
 - **Trạng thái:** Đề xuất thiết kế, làm cơ sở xác nhận yêu cầu và triển khai MVP.
 - **Phạm vi:** Giải đáp nghiệp vụ cho người dùng non-tech; tiếp nhận, làm rõ và tổng hợp vấn đề cho đội dự án.
 
 > Nguyên tắc cốt lõi: AI đối chiếu ba nguồn ngữ cảnh chính — bản tóm tắt chức năng được cập nhật từ source backend/ERD của phiên bản đang chạy, mẫu hỏi đáp và dữ liệu Zalo group. Chatbot chỉ trả lời khi có căn cứ phù hợp và được phép công bố; nếu thiếu hoặc mâu thuẫn thì đề nghị user gửi vấn đề; chỉ tạo/gộp issue sau khi user đồng ý và nội dung qua bộ lọc chống spam. Zalo là nguồn thu thập, không phải kênh bot trả lời.
 
-**Phân quyền:** `user` chỉ sử dụng AI chat. `admin` sử dụng AI chat, Vấn đề, Kho tri thức và Cấu hình. Quyền được thực thi tại backend và lớp truy xuất dữ liệu, không dựa vào việc ẩn menu.
+**Phân quyền:** `user` dùng Trợ lí thông minh và Vấn đề của mình. `technician` dùng Trợ lí thông minh, quản lý toàn bộ Vấn đề và soạn Kho tri thức. `admin` có toàn quyền, gồm duyệt tri thức và Cấu hình. Quyền được thực thi tại backend và lớp truy xuất dữ liệu, không dựa vào việc ẩn menu.
+
+
+### Ma trận quyền
+
+| Chức năng | admin | technician | user |
+|---|---|---|---|
+| Trợ lí thông minh | Có, phiên riêng | Có, phiên riêng | Có, phiên riêng |
+| Vấn đề | Toàn bộ | Toàn bộ, phân công và xử lý | Chỉ phản ánh do chính mình tạo/gửi |
+| Kho tri thức | Xem, soạn, duyệt, hết hiệu lực | Xem, soạn/sửa bản nháp; sửa mẫu đã duyệt phải chờ duyệt lại | Không |
+| Cấu hình, đặt lại demo | Có | Không | Không |
+| Thu thập Zalo | Có | Có | Không |
+
+User có đúng hai tab **Trợ lí thông minh** và **Vấn đề**. Tab Vấn đề hiển thị nội dung riêng đã gửi, trạng thái, đính chính và rút phản ánh theo quy tắc hiện hành. Không hiển thị tóm tắt nội bộ, lịch sử xử lý nội bộ, dữ liệu Zalo hoặc phản ánh của người khác dù được gộp cùng issue. Quyền sở hữu lấy từ danh tính đăng nhập và trường người tạo/người gửi; không suy ra từ việc biết mã issue hoặc có liên kết tới hội thoại.
+
+Demo HTML dùng bộ chọn tài khoản và localStorage để minh họa; không phải cơ chế bảo mật. Khi triển khai thật, Spring Boot phải kiểm tra vai trò, quyền sở hữu tại mọi API và truy vấn dữ liệu; backend xác định người tạo, không nhận danh tính do client tự khai. Kiểm thử trường hợp đổi ID phản ánh/issue sang tài khoản khác, gộp nhiều phản ánh và gọi trực tiếp API bị cấm.
 
 ## 1. Bối cảnh và bài toán
 
@@ -26,7 +41,7 @@ Hệ thống AI cần hỗ trợ đồng thời hai bài toán:
 
 ### 2.1. Kênh chat hỗ trợ người dùng
 
-Khách hàng (`user`) nhắn trực tiếp với chatbot trong các phiên trò chuyện có lịch sử riêng. Hệ thống đối chiếu ba nguồn ngữ cảnh; khi có kết luận đủ căn cứ, đúng quyền, điều kiện và phiên bản, chatbot trả lời ngay kèm nguồn được phép công bố và ảnh hướng dẫn nếu mẫu trả lời đã duyệt có ảnh. Khi thiếu dữ kiện, bot hỏi bổ sung. Khi chưa có căn cứ phù hợp hoặc nguồn mâu thuẫn, chatbot thông báo giới hạn và đề nghị user gửi vấn đề đến đội phụ trách. Việc hỏi không tự tạo issue. User có thể chủ động bấm **Đề nghị gửi vấn đề** trong chat, nhưng vẫn phải xác nhận gửi. Sau xác nhận, backend kiểm tra tính liên quan, mức độ cụ thể, spam, giới hạn gửi và phản ánh trùng. Chỉ khi qua bước lọc mới tạo/gộp issue và hiện mã, trạng thái dưới câu trả lời. User có thể mở **Vấn đề của tôi** ngay trong màn chat để theo dõi, đính chính hoặc rút phản ánh của mình theo trạng thái xử lý.
+Khách hàng (`user`) nhắn trực tiếp với chatbot trong các phiên trò chuyện có lịch sử riêng. Hệ thống đối chiếu ba nguồn ngữ cảnh; khi có kết luận đủ căn cứ, đúng quyền, điều kiện và phiên bản, chatbot trả lời ngay kèm nguồn được phép công bố và ảnh hướng dẫn nếu mẫu trả lời đã duyệt có ảnh. Khi thiếu dữ kiện, bot hỏi bổ sung. Khi chưa có căn cứ phù hợp hoặc nguồn mâu thuẫn, chatbot thông báo giới hạn và đề nghị user gửi vấn đề đến đội phụ trách. Việc hỏi không tự tạo issue. User có thể chủ động bấm **Đề nghị gửi vấn đề** trong chat, nhưng vẫn phải xác nhận gửi. Sau xác nhận, backend kiểm tra tính liên quan, mức độ cụ thể, spam, giới hạn gửi và phản ánh trùng. Chỉ khi qua bước lọc mới tạo/gộp issue và hiện mã, trạng thái dưới câu trả lời. User có thể mở tab **Vấn đề** (có lối tắt **Vấn đề của tôi** trong chat) để theo dõi, đính chính hoặc rút phản ánh của mình theo trạng thái xử lý.
 
 Câu trả lời phải:
 
@@ -38,7 +53,7 @@ Câu trả lời phải:
 
 ### 2.2. Hệ thống quản lý vấn đề và danh sách issue cho dev
 
-Admin (BA, kỹ thuật viên và người phụ trách) có danh sách vấn đề tập trung. Hệ thống ghi nhận phản ánh từ AI chat sau khi user xác nhận và qua bộ lọc; dữ liệu Zalo được thu thập, phân loại theo luồng riêng, rồi mới bổ sung phản ánh phù hợp, giữ phản ánh gốc, nguồn, người bị ảnh hưởng, kết quả làm rõ và bước xử lý tiếp theo.
+Admin và technician (BA, kỹ thuật viên và người phụ trách) có danh sách vấn đề tập trung. Hệ thống ghi nhận phản ánh từ AI chat sau khi user xác nhận và qua bộ lọc; dữ liệu Zalo được thu thập, phân loại theo luồng riêng, rồi mới bổ sung phản ánh phù hợp, giữ phản ánh gốc, nguồn, người bị ảnh hưởng, kết quả làm rõ và bước xử lý tiếp theo.
 
 Danh sách này cần phân biệt:
 
@@ -185,7 +200,7 @@ Gán người phụ trách, lưu bước tiếp theo và theo dõi phản hồi.
 
 ### Bước 6 — User quản lý phản ánh đã gửi
 
-- Trong màn AI chat, **Vấn đề của tôi** liệt kê các phản ánh do chính user gửi, gồm mã, trạng thái và lịch sử đính chính. Không mở thêm khu vực quản trị cho user.
+- Trong tab **Vấn đề**, danh sách của user liệt kê các phản ánh do chính user gửi, gồm mã, trạng thái và lịch sử đính chính. User không được truy cập danh sách toàn hệ thống hoặc thông tin nội bộ.
 - User được **bổ sung/đính chính** khi issue đang chờ hoặc đang xử lý. Nội dung mới được thêm thành bản ghi có thời gian và người gửi; không ghi đè lời mô tả gốc. BA/kỹ thuật viên thấy cập nhật và có thể điều chỉnh bước xử lý.
 - User được **rút phản ánh** khi issue còn ở trạng thái chờ xử lý. Hệ thống giữ nội dung và dấu vết rút để kiểm toán. Nếu issue đang gộp phản ánh của người khác hoặc từ Zalo, chỉ liên kết của user này bị rút; issue chung vẫn tiếp tục. Nếu không còn nguồn phản ánh nào, issue chuyển trạng thái đã rút.
 - Khi issue đang xử lý, không cho rút trực tiếp; user gửi đính chính để đội phụ trách xem. Issue đã hoàn tất được giữ nguyên; phát sinh mới đi qua luồng chat/gửi vấn đề mới.
@@ -311,7 +326,7 @@ Kiểm tra nội dung đầu ra là lớp bổ sung, không thay thế việc t�
 | Thành phần | Trách nhiệm |
 |---|---|
 | AI | Hiểu câu hỏi, trả lời trực tiếp từ căn cứ đã duyệt khi đủ điều kiện, hỏi bổ sung, tóm tắt và đề xuất phân loại vấn đề |
-| Backend | Thực thi quyền admin/user, lọc căn cứ, kiểm tra sự đồng ý, lọc rồi tạo/gộp issue, truy xuất dữ liệu, chống trùng, điều phối tác vụ và ghi lịch sử |
+| Backend | Thực thi quyền admin/technician/user, lọc căn cứ, kiểm tra sự đồng ý, lọc rồi tạo/gộp issue, truy xuất dữ liệu, chống trùng, điều phối tác vụ và ghi lịch sử |
 | Admin / Support | Theo dõi hội thoại và vấn đề; can thiệp khi cần, quản lý tri thức theo quyền được giao |
 | Người phụ trách nghiệp vụ / BA | Xác nhận quy tắc, giải quyết mâu thuẫn và thống nhất thay đổi |
 | Dev và người kiểm thử | Kiểm tra triển khai, tái hiện lỗi, sửa đổi và xác minh kết quả |
@@ -322,12 +337,12 @@ AI không tự xác nhận nghiệp vụ mới hoặc sửa production trong ph�
 
 ### Giai đoạn 1 — AI chat và issue có xác nhận
 
-- User đăng nhập và chỉ dùng AI chat; admin có thêm Vấn đề, Kho tri thức và Cấu hình.
+- User đăng nhập và dùng hai tab Trợ lí thông minh, Vấn đề của mình; technician có thêm Kho tri thức và xử lý toàn bộ vấn đề; admin có toàn quyền gồm Cấu hình và duyệt tri thức.
 - Dựng pipeline nền tạo snapshot chức năng từ source backend/ERD của bản đang chạy; lập chỉ mục snapshot đã xuất bản, pattern đã xác nhận và dữ liệu Zalo được phép dùng; mỗi mục có nguồn, quyền và phiên bản.
 - Mẫu trả lời có thể gắn ảnh; ảnh mới hoặc ảnh sửa phải duyệt cùng nội dung trước khi xuất hiện trong chat.
 - Chatbot trả lời trực tiếp khi đủ căn cứ; hỏi bổ sung khi thiếu dữ kiện.
 - Khi không có căn cứ hoặc nguồn mâu thuẫn, chatbot đề nghị user gửi vấn đề. User xác nhận; backend lọc nội dung liên quan, đủ chi tiết, spam, trùng và giới hạn gửi; đạt thì tạo/gộp issue, lưu hội thoại gốc, hiện mã/trạng thái trong chat. Nút đề nghị gửi cũng đi qua luồng này.
-- User xem **Vấn đề của tôi** trong chat, gửi đính chính và rút phản ánh còn chờ xử lý; admin xem issue, gán người phụ trách và theo dõi trạng thái.
+- User xem phản ánh do chính mình gửi ở tab **Vấn đề**, gửi đính chính và rút phản ánh còn chờ xử lý; admin/technician xem issue, gán người phụ trách và theo dõi trạng thái.
 - Thu thập tin Zalo qua quyền đã xác minh hoặc import, chỉ để phân tích/tổng hợp; không trả lời trong group.
 
 Trước khi mở cho toàn bộ user, chạy pilot với bộ hội thoại đã gán nhãn để kiểm chứng điều kiện trả lời, tỷ lệ từ chối và độ chính xác của bộ lọc vấn đề và tỷ lệ issue rác.
@@ -351,7 +366,7 @@ Trước khi mở cho toàn bộ user, chạy pilot với bộ hội thoại đ�
 | Nhóm | Nội dung kiểm chứng |
 |---|---|
 | Giải đáp trực tiếp | Chatbot trả lời ngay khi có căn cứ đã duyệt, đúng điều kiện và phiên bản; hỏi thêm khi thiếu dữ kiện |
-| Phân quyền và bảo mật | User chỉ thao tác AI chat và xem vấn đề của mình; admin xem khu vực nội bộ; code/ERD thô và dữ liệu nhóm nhạy cảm không lộ ở kênh user |
+| Phân quyền và bảo mật | User chỉ thao tác hai tab Trợ lí thông minh và Vấn đề của mình; technician xử lý vấn đề/soạn tri thức; admin quản trị toàn bộ; code/ERD thô và dữ liệu nhóm nhạy cảm không lộ ở kênh user |
 | Phân loại | Không tự kết luận câu hỏi chưa có đáp án là bug |
 | Gửi vấn đề có xác nhận | Hỏi thiếu căn cứ không tạo issue; user từ chối không tạo; user đồng ý nhưng nội dung mơ hồ/spam không tạo; nội dung hợp lệ tạo/gộp issue và hiện mã/trạng thái; giữ dấu vết đồng ý và nguồn bằng chứng |
 | Ảnh câu trả lời | Ảnh gắn với mẫu đã duyệt xuất hiện đúng câu trả lời; ảnh sửa phải duyệt lại và có mô tả thay thế |
@@ -366,7 +381,7 @@ Dùng bộ hội thoại thực tế được phép sử dụng, có đáp án v
 ## 14. Các điểm cần chốt trước khi triển khai
 
 1. Cơ chế tích hợp Zalo và các quyền thực tế có sẵn.
-2. Vị trí đặt màn AI chat trực tiếp cho khách hàng và cơ chế đăng nhập user/admin.
+2. Vị trí đặt màn AI chat trực tiếp cho khách hàng và cơ chế đăng nhập admin/technician/user.
 3. Người có quyền xác nhận nghiệp vụ và duyệt nội dung đưa vào kho kiến thức.
 4. Cách xác định phiên bản production tương ứng với source và cấu hình.
 5. Nơi quản lý issue và cách chuyển việc cho dev.
