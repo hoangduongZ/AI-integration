@@ -23,6 +23,7 @@ docs/
   connectors.md            Hợp đồng mở rộng nguồn Zalo/Discord/Telegram/...
   mvp-scope.md             Phạm vi thử nghiệm tri thức nhập thủ công
   diagrams/                Sơ đồ ERD và luồng connector dạng SVG
+backend/                  Backend Spring Boot và Dockerfile
 database/
   README.md               Quy ước khóa/code, hướng dẫn chạy SQL
   sql/                    Script tạo bảng theo cụm và dữ liệu mẫu
@@ -36,6 +37,17 @@ qa/
 ```
 
 `.codex` là liên kết cấu hình công cụ hiện có; giữ nguyên. `.git` chứa lịch sử quản lý mã nguồn.
+
+## Chạy backend bằng Docker Compose
+
+Tại thư mục gốc repository, sao chép `.env.example` thành `.env`, thay `AI_DB_PASSWORD`, rồi chạy:
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Kiểm tra tại `http://127.0.0.1:8080/actuator/health` (hoặc cổng đã đặt bằng `AI_HTTP_PORT`). Compose khởi tạo 12 bảng MVP trên volume PostgreSQL **mới**; script khởi tạo không chạy lại trên volume đã có dữ liệu. Xem [hướng dẫn backend](backend/README.md) để biết giới hạn và cách kiểm tra.
 
 ## Xem thử và kiểm tra
 

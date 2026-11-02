@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ai_support
+      POSTGRES_USER: ai_support
+      POSTGRES_PASSWORD: ${AI_DB_PASSWORD:?Set AI_DB_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/sql/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ./database/sql/01_identity_chat.sql:/docker-entrypoint-initdb.d/01_identity_chat.sql:ro
+      - ./database/sql/02_knowledge.sql:/docker-entrypoint-initdb.d/02_knowledge.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      AI_DB_URL: jdbc:postgresql://db:5432/ai_support
+      AI_DB_USERNAME: ai_support
+      AI_DB_PASSWORD: ${AI_DB_PASSWORD:?Set AI_DB_PASSWORD in .env}
+      AI_HTTP_PORT: 8080
+    ports:
+      - "127.0.0.1:${AI_HTTP_PORT:-8080}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

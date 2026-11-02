@@ -19,6 +19,12 @@ export AI_DB_PASSWORD='...'
 ./mvnw spring-boot:run
 ```
 
+## Chạy bằng Docker Compose
+
+Từ thư mục gốc repository, sao chép `.env.example` thành `.env`, đặt `AI_DB_PASSWORD` riêng cho máy của bạn rồi chạy `docker compose up --build -d`. Compose tạo PostgreSQL và chạy các script `00`–`02` **một lần khi volume còn trống**. Database không mở cổng ra máy host; backend chỉ nghe ở `127.0.0.1:8080` (hoặc `AI_HTTP_PORT` trong `.env`).
+
+Dùng `docker compose ps` để xem trạng thái, `docker compose logs -f backend` để xem log và `docker compose down` để dừng. `docker compose down -v` sẽ xóa toàn bộ dữ liệu PostgreSQL cục bộ; chỉ dùng khi chủ động muốn khởi tạo lại từ đầu. Các thay đổi schema sau này cần migration riêng, không sửa script khởi tạo rồi kỳ vọng volume cũ tự cập nhật.
+
 ## Cấu trúc source
 
 - `AiApplication`: điểm khởi động Spring Boot.
