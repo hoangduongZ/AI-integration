@@ -391,3 +391,11 @@ Dùng bộ hội thoại thực tế được phép sử dụng, có đáp án v
 ---
 
 **Định hướng triển khai:** snapshot chức năng từ source/ERD cùng hai nguồn còn lại được chuẩn bị từ MVP; AI chat trả lời có căn cứ, ảnh hướng dẫn đi cùng mẫu đã duyệt, và vấn đề chỉ được tạo/hiển thị sau khi user đồng ý và qua bộ lọc. Tách riêng thông tin được công bố, hành vi triển khai và quyết định nghiệp vụ trong toàn bộ vòng xử lý.
+
+## 15. Bổ sung yêu cầu: mở rộng nguồn đa nền tảng — 02/11/2026
+
+Zalo là nguồn thu thập ban đầu; thiết kế phải thêm được Discord, Telegram và nền tảng khác qua connector/adapter chung. Dữ liệu được chuẩn hóa thành connection, channel, record và revision; không tạo thêm các cột/bảng nghiệp vụ theo từng tên nền tảng. Tin nhắn, tài liệu hoặc phản ánh bên ngoài vẫn đi qua kiểm tra quyền, lọc nghiệp vụ và quy trình duyệt tri thức như nhau.
+
+Giữ ID và phiên bản nguồn để retry không tạo trùng, theo dõi sửa/xóa và truy vết đúng bằng chứng đã dùng. Không giả định mọi nền tảng đều có webhook, lịch sử hoặc quyền truy cập giống nhau. MVP tiếp tục chỉ thu thập/import; mở rộng nguồn không tự cấp quyền bot gửi tin ra các nền tảng.
+
+Thiết kế cụ thể: [connector đa nền tảng](connectors.md) và [ERD cập nhật](erd.md). Phần bổ sung này mở rộng cách lưu/tiếp nhận nguồn; không thay các nguyên tắc đồng ý gửi phản ánh của AI chat, quyền sở hữu hay duyệt nội dung công bố.

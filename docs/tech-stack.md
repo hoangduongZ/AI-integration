@@ -55,6 +55,10 @@ Demo HTML dùng bộ chọn tài khoản và localStorage để minh họa; khô
 
 ## Phụ thuộc cần xác minh
 
+### Mở rộng nguồn dữ liệu
+
+Tầng tích hợp dùng connector/adapter trong backend Spring Boot. Zalo là nguồn đầu tiên; Discord, Telegram và các nền tảng thêm sau cùng dùng mô hình platform → connection → channel → record → revision và inbox chống trùng. Cấu hình platform và adapter được bổ sung độc lập với các bảng issue/report/knowledge. Chưa chốt SDK hay khả năng API của từng nền tảng. Xem [hợp đồng connector](connectors.md) và [ERD](erd.md).
+
 Zalo chỉ là nguồn thu thập dữ liệu group để phát hiện câu hỏi lặp, ứng viên tri thức và vấn đề cần xử lý; chatbot không trả lời trong group. Cần xác minh quyền đọc tin, nhận sự kiện/webhook và lấy lịch sử. Nếu chưa có quyền, có thể dùng import được phép. AI chat trực tiếp cho user là luồng riêng, không phụ thuộc khả năng gửi tin Zalo.
 
 Cần có quyền đọc repository backend và ERD của đúng phiên bản đang chạy để lập chỉ mục; dữ liệu Zalo cần quyền thu thập hợp lệ. Phiên bản Java, Spring Boot, PostgreSQL và model AI cụ thể sẽ được khóa theo môi trường hiện hữu và kết quả kiểm thử trước khi triển khai.

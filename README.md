@@ -17,6 +17,9 @@ docs/
   tech-stack.md            Công nghệ và phân quyền
   mock-guide.md            Hướng dẫn thử mock và giới hạn
   ui-ux-review.md           Kết quả rà soát bố cục và điều hướng
+  erd.md                   ERD đề xuất, từ điển dữ liệu và ràng buộc nghiệp vụ
+  connectors.md            Hợp đồng mở rộng nguồn Zalo/Discord/Telegram/...
+  diagrams/                Sơ đồ ERD và luồng connector dạng SVG
 qa/
   mock-check.mjs           Kiểm tra chức năng và responsive
   serve.mjs                Server xem thử local
@@ -45,3 +48,5 @@ node qa/structure-check.mjs
 ```
 
 Hai script kiểm tra trình duyệt cần Chrome và CDP helper Taste Skill đã cài trên máy này. Xem [hướng dẫn dùng thử](docs/mock-guide.md) để biết phạm vi mô phỏng và chi tiết kiểm tra.
+
+Thiết kế backend: [ERD và quy tắc dữ liệu](docs/erd.md), dựa trên tài liệu nghiệp vụ thay vì ánh xạ trực tiếp localStorage của mock.
