@@ -45,7 +45,7 @@ submission_evidence.source_record_revision_id -> source_record_revision.id
 knowledge_provenance.source_record_revision_id -> source_record_revision.id
 ```
 
-`source_type` chỉ phân biệt `ai_chat` và `external`. `knowledge_item.source_kind` phân biệt `faq`, `function_snapshot`, `external_context`; Discord/Zalo/Telegram là nguồn gốc, không phải mức tin cậy.
+`source_type` chỉ phân biệt `ai_chat` và `external`. `knowledge_item.content_type` phân biệt `faq`, `function_snapshot`, `external_context`; Discord/Zalo/Telegram là nguồn gốc, không phải mức tin cậy.
 
 Ngoài tin nhắn, nguồn tài liệu/email/ticket có thể dùng cùng record/revision. Adapter quyết định phạm vi ID và cách chuẩn hóa nội dung; record_type không cho adapter tự cấp authority hay quyền công bố. Nếu sau này thêm nghiệp vụ gửi ra nền tảng, thiết kế outbox/capabilities riêng thay vì dùng inbox để gửi.
 
@@ -100,6 +100,7 @@ Import file được phép là một kiểu adapter, vẫn cần định danh l�
 - Không có version/event ID đáng tin: adapter phải đối soát với trạng thái đã lưu, không tạo revision nếu không đổi, và giữ batch/checkpoint có thể phát lại. Không dùng riêng content_hash làm version unique vì A → B → A là lịch sử hợp lệ.
 - Webhook được xác thực trước, ghi inbox bền vững rồi mới xác nhận tiếp nhận theo giao thức nền tảng; chuẩn hóa/lọc chạy bất đồng bộ. Cursor chỉ advance sau khi batch được ghi inbox an toàn; retry phần chưa xử lý từ inbox.
 - `ingestion_event` unique theo connection/eventKey; revision unique theo record/event. Chỉ retry cùng event, không append lại revision. Một sự kiện batch có thể cập nhật nhiều record nhưng chỉ một revision cuối cho mỗi record trong sự kiện; nếu nguồn gửi nhiều thay đổi tuần tự cùng record trong một batch, adapter tách thành sub-event ổn định có ordinal riêng.
+- Tạo record ở trạng thái `pending`; sau khi lưu revision, cập nhật `current_revision_id` và `state=active` trong cùng transaction.
 - `source_record_revision.ingestion_event_id` và record → channel → connection phải cùng connection. Backend kiểm tra bất biến chéo bảng này trong transaction; không chỉ dựa vào FK tồn tại độc lập.
 - Khi update/delete đến lệch thứ tự, dùng sequence/version của nguồn nếu có. Timestamp thời điểm nhận không chứng minh thứ tự thay đổi. Trường hợp không thể kết luận chuyển `ordering_status=ambiguous` để đọc lại/đối soát.
 - Raw payload nằm trong file_asset internal. Tệp đính kèm dùng metadata phiên bản và hash khi có, chỉ lấy nội dung nếu được phép; không coi URL thay đổi được là bằng chứng bất biến.

@@ -29,6 +29,16 @@ class MvpSchemaHealthIndicatorTests {
 
         Health health = indicator.health();
         assertThat(health.getStatus().getCode()).isEqualTo("DOWN");
-        assertThat(health.getDetails()).containsEntry("missingTables", "ai_support.knowledge_item");
+        assertThat(health.getDetails()).containsEntry("missingComponents", "ai_support.knowledge_item");
     }
+    @Test
+    void reportsDownWhenVectorExtensionIsMissing() {
+        when(jdbcTemplate.queryForObject(anyString(), eq(String.class)))
+                .thenReturn("extension:vector");
+
+        Health health = indicator.health();
+        assertThat(health.getStatus().getCode()).isEqualTo("DOWN");
+        assertThat(health.getDetails()).containsEntry("missingComponents", "extension:vector");
+    }
+
 }

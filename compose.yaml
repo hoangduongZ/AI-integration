@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:0.8.7-pg16-bookworm
     environment:
       POSTGRES_DB: ai_support
       POSTGRES_USER: ai_support
@@ -10,6 +10,11 @@ services:
       - ./database/sql/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
       - ./database/sql/01_identity_chat.sql:/docker-entrypoint-initdb.d/01_identity_chat.sql:ro
       - ./database/sql/02_knowledge.sql:/docker-entrypoint-initdb.d/02_knowledge.sql:ro
+      - ./database/sql/03_issues.sql:/docker-entrypoint-initdb.d/03_issues.sql:ro
+      - ./database/sql/04_releases_sources.sql:/docker-entrypoint-initdb.d/04_releases_sources.sql:ro
+      - ./database/sql/05_external_connectors.sql:/docker-entrypoint-initdb.d/05_external_connectors.sql:ro
+      - ./database/sql/06_background_jobs.sql:/docker-entrypoint-initdb.d/06_background_jobs.sql:ro
+      - ./database/sql/10_vector.sql:/docker-entrypoint-initdb.d/10_vector.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s

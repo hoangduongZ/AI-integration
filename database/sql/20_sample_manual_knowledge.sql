@@ -1,5 +1,5 @@
--- Optional demo data. Only creates missing codes; never overwrites existing data.
--- Run after 00_schema.sql, 01_identity_chat.sql and 02_knowledge.sql.
+-- Dữ liệu mẫu tùy chọn. Chỉ thêm mã chưa có, không ghi đè dữ liệu hiện hữu.
+-- Chạy sau 00_schema.sql, 01_identity_chat.sql và 02_knowledge.sql.
 BEGIN;
 INSERT INTO ai_support.app_user (code, display_name, role)
 VALUES ('USR-MVP-ADMIN', 'Quản trị thử nghiệm MVP', 'admin')
@@ -25,7 +25,7 @@ WHERE k.code = 'KT-HOSO-TIENDO' AND u.code = 'USR-MVP-ADMIN'
 ON CONFLICT (code) DO NOTHING;
 COMMIT;
 
--- Query by meaningful code, keep UUID for relationships.
+-- Tìm bằng mã dễ đọc, dùng UUID để liên kết logic.
 SELECT k.code AS knowledge_code, r.code AS revision_code,
        r.status, r.version_label, r.sample_questions, r.body_public
 FROM ai_support.knowledge_item k
@@ -33,5 +33,5 @@ JOIN ai_support.knowledge_revision r ON r.item_id = k.id
 WHERE k.code = 'KT-HOSO-TIENDO'
 ORDER BY r.revision_no DESC;
 
--- The example stays DRAFT. Confirm content and calculate its canonical hash
--- before approving/publishing through the application workflow.
+-- Bản mẫu giữ trạng thái DRAFT. Xác nhận nội dung và tính hash chuẩn
+-- trước khi duyệt/công bố qua luồng nghiệp vụ của ứng dụng.

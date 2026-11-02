@@ -47,7 +47,7 @@ docker compose up --build -d
 docker compose ps
 ```
 
-Kiểm tra tại `http://127.0.0.1:8080/actuator/health` (hoặc cổng đã đặt bằng `AI_HTTP_PORT`). Compose khởi tạo 12 bảng MVP trên volume PostgreSQL **mới**; script khởi tạo không chạy lại trên volume đã có dữ liệu. Xem [hướng dẫn backend](backend/README.md) để biết giới hạn và cách kiểm tra.
+Kiểm tra tại `http://127.0.0.1:8080/actuator/health` (hoặc cổng đã đặt bằng `AI_HTTP_PORT`). Compose khởi tạo đầy đủ 38 bảng (gồm pgvector dùng từ MVP) trên volume PostgreSQL **mới**; script khởi tạo không chạy lại trên volume đã có dữ liệu. Xem [hướng dẫn backend](backend/README.md) để biết giới hạn và cách kiểm tra.
 
 ## Xem thử và kiểm tra
 
@@ -68,4 +68,4 @@ node qa/structure-check.mjs
 
 Hai script kiểm tra trình duyệt cần Chrome và CDP helper Taste Skill đã cài trên máy này. Xem [hướng dẫn dùng thử](docs/mock-guide.md) để biết phạm vi mô phỏng và chi tiết kiểm tra.
 
-Thiết kế backend: [ERD và quy tắc dữ liệu](docs/erd.md), dựa trên tài liệu nghiệp vụ thay vì ánh xạ trực tiếp localStorage của mock.
+Thiết kế database hiện hành: [bảng và quy tắc dữ liệu](database/README.md), [ERD](docs/erd.md) và [kết quả rà soát](database/review.md).
