@@ -4,6 +4,8 @@ Web mock hỗ trợ nghiệp vụ: trợ lí thông minh, quản lý vấn đề
 
 Mở [index.html](index.html) bằng Chrome hoặc Edge để chạy ngay. Đây là bản mô phỏng, lưu dữ liệu trên trình duyệt, chưa kết nối backend/AI/Zalo thật.
 
+MVP trước mắt: [tự nhập mẫu tri thức](docs/mvp-scope.md), chưa đọc repository/ERD/DB nghiệp vụ. [SQL tạo bảng theo cụm](database/README.md) giữ UUID PK, thêm code UNIQUE và không dùng foreign key.
+
 ## Cấu trúc
 
 ```text
@@ -19,12 +21,17 @@ docs/
   ui-ux-review.md           Kết quả rà soát bố cục và điều hướng
   erd.md                   ERD đề xuất, từ điển dữ liệu và ràng buộc nghiệp vụ
   connectors.md            Hợp đồng mở rộng nguồn Zalo/Discord/Telegram/...
+  mvp-scope.md             Phạm vi thử nghiệm tri thức nhập thủ công
   diagrams/                Sơ đồ ERD và luồng connector dạng SVG
+database/
+  README.md               Quy ước khóa/code, hướng dẫn chạy SQL
+  sql/                    Script tạo bảng theo cụm và dữ liệu mẫu
 qa/
   mock-check.mjs           Kiểm tra chức năng và responsive
   serve.mjs                Server xem thử local
   inspect-chat.mjs         Kiểm tra riêng màn chat bằng Taste Skill
   structure-check.mjs      Kiểm tra file, liên kết và đường dẫn HTTP
+  sql-check.mjs            Xác minh SQL bằng PostgreSQL nhúng, không dùng DB ngoài
 .taste-skill/              Hướng thiết kế, nhận xét và kết quả QA sinh tự động
 ```
 

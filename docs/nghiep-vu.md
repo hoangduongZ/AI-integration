@@ -5,6 +5,8 @@
 - **Trạng thái:** Đề xuất thiết kế, làm cơ sở xác nhận yêu cầu và triển khai MVP.
 - **Phạm vi:** Giải đáp nghiệp vụ cho người dùng non-tech; tiếp nhận, làm rõ và tổng hợp vấn đề cho đội dự án.
 
+> **Phạm vi MVP cập nhật 02/11/2026:** trước mắt bạn tự nhập mẫu tri thức để thử, chưa kết nối repository/ERD/DB nghiệp vụ hoặc nền tảng bên ngoài. Các mô tả ba nguồn tự động bên dưới là định hướng mở rộng. [Phạm vi chạy trước](mvp-scope.md). Dữ liệu của chính app dùng UUID PK + code UNIQUE; liên kết UUID do backend tự kiểm soát, không khai báo foreign key.
+
 > Nguyên tắc cốt lõi: AI đối chiếu ba nguồn ngữ cảnh chính — bản tóm tắt chức năng được cập nhật từ source backend/ERD của phiên bản đang chạy, mẫu hỏi đáp và dữ liệu Zalo group. Chatbot chỉ trả lời khi có căn cứ phù hợp và được phép công bố; nếu thiếu hoặc mâu thuẫn thì đề nghị user gửi vấn đề; chỉ tạo/gộp issue sau khi user đồng ý và nội dung qua bộ lọc chống spam. Zalo là nguồn thu thập, không phải kênh bot trả lời.
 
 **Phân quyền:** `user` dùng Trợ lí thông minh và Vấn đề của mình. `technician` dùng Trợ lí thông minh, quản lý toàn bộ Vấn đề và soạn Kho tri thức. `admin` có toàn quyền, gồm duyệt tri thức và Cấu hình. Quyền được thực thi tại backend và lớp truy xuất dữ liệu, không dựa vào việc ẩn menu.

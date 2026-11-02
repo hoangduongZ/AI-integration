@@ -1,0 +1,31 @@
+{
+  "engine": "PGlite 0.5.14 (embedded PostgreSQL)",
+  "passed": 24,
+  "checks": [
+    "DDL 00_schema.sql",
+    "DDL 01_identity_chat.sql",
+    "DDL 02_knowledge.sql",
+    "DDL 03_issues.sql",
+    "DDL 04_releases_sources.sql",
+    "DDL 05_external_connectors.sql",
+    "DDL 06_background_jobs.sql",
+    "30 application tables",
+    "30 UUID primary keys",
+    "30 unique code columns",
+    "No foreign-key constraints",
+    "No custom triggers",
+    "Sample rerun does not duplicate revisions",
+    "Lookup by readable code joins UUID relationships",
+    "Duplicate code rejected",
+    "Blank code rejected",
+    "Invalid role rejected",
+    "Relationship ownership is application-managed",
+    "Evidence must select one source",
+    "Publishing requires a content hash",
+    "One published manual revision per item and version",
+    "Embedding dimensions are checked",
+    "Manual MVP runs without source/release/connector clusters",
+    "MVP knowledge does not require a deployment record"
+  ],
+  "externalDatabaseUsed": false
+}

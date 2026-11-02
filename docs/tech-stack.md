@@ -4,6 +4,8 @@
 - **Ngày chốt:** 01/11/2026.
 - **Tài liệu nghiệp vụ:** [AI Integration cho hỗ trợ người dùng và tổng hợp issue nghiệp vụ](nghiep-vu.md).
 
+> **MVP trước mắt:** kho tri thức nhập thủ công; chưa tích hợp repository, ERD, DB nghiệp vụ hay connector ngoài. PostgreSQL ở đây lưu dữ liệu của chính app. Pipeline source và connector là giai đoạn sau. [Phạm vi MVP](mvp-scope.md), [SQL theo cụm](../database/README.md).
+
 ## Thành phần được chọn
 
 | Thành phần | Công nghệ | Vai trò |

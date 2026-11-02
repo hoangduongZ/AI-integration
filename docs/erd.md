@@ -1,6 +1,8 @@
 # ERD đề xuất — AI Integration
 
-Ngày thiết kế: 02/11/2026. Trạng thái: bản thiết kế để triển khai backend, chưa phải schema đang chạy và chưa có migration SQL.
+Ngày thiết kế: 02/11/2026. Trạng thái: SQL khởi tạo theo cụm đã có, chưa áp dụng vào database của bạn.
+
+Quyết định mới nhất: MVP dùng tri thức tự nhập, chưa đọc repository/ERD/DB nghiệp vụ bên ngoài. Xem [phạm vi MVP](mvp-scope.md). Mỗi bảng giữ UUID PK và thêm code UNIQUE; mọi đường nối là quan hệ logic, **không khai báo foreign key hoặc trigger kiểm soát quan hệ**. [SQL và thứ tự chạy](../database/README.md) là định nghĩa vật lý hiện hành.
 
 Nguồn yêu cầu: [nghiệp vụ v1.6](nghiep-vu.md), [tech stack](tech-stack.md) và [web mock](../index.html). Tài liệu nghiệp vụ là cơ sở quyết định; mô hình localStorage của mock chỉ minh họa UI, chưa đủ để chuyển thẳng thành bảng.
 
@@ -27,8 +29,8 @@ Sơ đồ đã xuất SVG để mở trực tiếp trong trình duyệt: [tổng
 - Mỗi tài khoản có một vai trò hiện hành trong MVP. BA/Dev/Tester là trách nhiệm công việc; chưa tự tạo thêm role ngoài ba role đã chốt.
 - Có thể dùng SSO: `app_user` lưu khóa định danh ngoài, không tự thiết kế bảng mật khẩu khi chưa chọn cơ chế đăng nhập.
 - Toàn bộ bảng thuộc một backend Spring Boot và một schema đề xuất `ai_support`; tên schema/bảng là đề xuất mới. Không tạo FK tới database nghiệp vụ của sản phẩm được hỗ trợ.
-- PK dùng UUID; thời gian dùng `timestamptz`; mã hiển thị VD-/KT- tách khỏi PK. Trường JSONB dành cho ngữ cảnh và bằng chứng có cấu trúc thay đổi, không thay thế FK hay trạng thái cần kiểm tra.
-- Hình mô tả các cột chính. Các FK tới actor/auditor và cột kiểm toán được liệt kê trong từ điển nhưng không vẽ hết đường nối để sơ đồ còn đọc được.
+- Mỗi bảng có `id UUID PRIMARY KEY DEFAULT gen_random_uuid()` và `code VARCHAR(160) NOT NULL UNIQUE`; code do bạn/backend đặt theo ngữ nghĩa, liên kết vẫn dùng UUID. Thời gian dùng timestamptz; JSONB cho dữ liệu ngữ cảnh có cấu trúc thay đổi.
+- Hình mô tả cột chính và quan hệ logic; SQL chứa cột kiểm toán chi tiết. Bảng nối cũng có UUID PK, code UNIQUE và UNIQUE cho cặp liên kết. Không có FK vật lý, cascade hoặc trigger kiểm soát quan hệ; backend/người quản lý dữ liệu tự kiểm soát.
 
 ## 2. ERD tổng quan
 
@@ -37,7 +39,7 @@ erDiagram
     app_user ||--o{ chat_session : owns
     chat_session ||--o{ chat_message : contains
     chat_message ||--o{ message_citation : cites
-    knowledge_chunk ||--o{ message_citation : supports
+    knowledge_chunk o|--o{ message_citation : supports
     knowledge_item ||--o{ knowledge_revision : versions
     knowledge_revision ||--o{ knowledge_chunk : indexed_as
     knowledge_revision ||--o{ knowledge_revision_release : applicable_to
@@ -59,7 +61,7 @@ erDiagram
 
 Quan hệ `issue` có ít nhất một `issue_report` là **bất biến nghiệp vụ sau commit**: tạo issue và report trong cùng transaction. FK đơn lẻ không ép được một bảng cha luôn có bảng con.
 
-Các nhóm dưới đây định nghĩa đầy đủ **30 bảng đề xuất cho MVP**. Bảng lặp lại ở một sơ đồ để chỉ quan hệ vẫn là cùng một bảng.
+Các nhóm dưới đây định nghĩa **30 bảng của thiết kế đích**, gồm phần MVP nhập tay và phần mở rộng sau. Chạy 00/01/02 để thử kho tri thức/chat, thêm 03 khi thử phản ánh; các cụm 04/05/06 có thể để sau. Bảng lặp lại ở một sơ đồ vẫn là cùng một bảng.
 
 ## 3. Tài khoản, hội thoại và tiếp nhận vấn đề
 
@@ -67,6 +69,7 @@ Các nhóm dưới đây định nghĩa đầy đủ **30 bảng đề xuất ch
 erDiagram
     app_user {
         uuid id PK
+        varchar code UK
         text auth_issuer
         text auth_subject
         text display_name
@@ -75,7 +78,8 @@ erDiagram
     }
     chat_session {
         uuid id PK
-        uuid owner_id FK
+        varchar code UK
+        uuid owner_id
         text title
         text draft_text
         timestamptz last_activity_at
@@ -84,9 +88,10 @@ erDiagram
     }
     chat_message {
         uuid id PK
-        uuid session_id FK
-        uuid reply_to_message_id FK
-        uuid release_id FK
+        varchar code UK
+        uuid session_id
+        uuid reply_to_message_id
+        uuid release_id
         bigint sequence_no
         text sender_type
         text body_public
@@ -96,17 +101,20 @@ erDiagram
     }
     message_citation {
         uuid id PK
-        uuid message_id FK
-        uuid chunk_id FK
+        varchar code UK
+        uuid message_id
+        uuid revision_id
+        uuid chunk_id
         text public_excerpt
         text public_label
-        int position
+        integer position
     }
     issue_submission {
         uuid id PK
-        uuid owner_id FK
-        uuid origin_chat_message_id FK
-        uuid origin_source_record_id FK
+        varchar code UK
+        uuid owner_id
+        uuid origin_chat_message_id
+        uuid origin_source_record_id
         text source_type
         text proposal_title
         text proposal_body
@@ -115,11 +123,12 @@ erDiagram
     }
     submission_attempt {
         uuid id PK
-        uuid submission_id FK
+        varchar code UK
+        uuid submission_id
         text request_key
         jsonb submitted_payload
         text payload_hash
-        uuid confirmed_by FK
+        uuid confirmed_by
         timestamptz confirmed_at
         text consent_payload_hash
         text decision
@@ -130,19 +139,20 @@ erDiagram
     }
     submission_evidence {
         uuid id PK
-        uuid submission_id FK
-        uuid chat_message_id FK
-        uuid source_record_revision_id FK
-        uuid file_asset_id FK
+        varchar code UK
+        uuid submission_id
+        uuid chat_message_id
+        uuid source_record_revision_id
+        uuid file_asset_id
     }
     issue {
         uuid id PK
-        text code UK
+        varchar code UK
         text title_internal
         text summary_internal
         text category
         text status
-        uuid assignee_id FK
+        uuid assignee_id
         jsonb verification_result
         text open_questions
         text next_action
@@ -153,27 +163,30 @@ erDiagram
     }
     issue_report {
         uuid id PK
-        uuid issue_id FK
-        uuid submission_id FK,UK
-        uuid accepted_attempt_id FK,UK
+        varchar code UK
+        uuid issue_id
+        uuid submission_id UK
+        uuid accepted_attempt_id UK
         text state
-        uuid withdrawn_by FK
+        uuid withdrawn_by
         timestamptz withdrawn_at
         timestamptz created_at
     }
     report_event {
         uuid id PK
-        uuid report_id FK
-        uuid actor_id FK
+        varchar code UK
+        uuid report_id
+        uuid actor_id
         text event_type
         text body_public
-        uuid file_asset_id FK
+        uuid file_asset_id
         timestamptz created_at
     }
     issue_event {
         uuid id PK
-        uuid issue_id FK
-        uuid actor_id FK
+        varchar code UK
+        uuid issue_id
+        uuid actor_id
         text event_type
         text body_internal
         jsonb change_data
@@ -201,7 +214,7 @@ erDiagram
 | `app_user` | `UNIQUE(auth_issuer, auth_subject)`; role thuộc user/technician/admin. Khóa tài khoản không xóa lịch sử |
 | `chat_session` | Một chủ sở hữu; bản nháp nằm trên phiên. Index `(owner_id, last_activity_at DESC, id)` cho lịch sử dùng ở sidebar chung. Sửa nháp dùng `lock_version` để tránh ghi đè giữa hai tab |
 | `chat_message` | `UNIQUE(session_id, sequence_no)` và `UNIQUE(session_id, client_request_key)`. sender_type user/assistant; reply phải trong cùng phiên. Chỉ một câu trả lời cuối cho một tin user bằng unique có điều kiện trên reply của assistant. Retry tiếp tục cùng message, không thêm câu trả lời mới |
-| `message_citation` | Chỉ gắn với tin assistant; `UNIQUE(message_id, chunk_id)`. Lưu trích đoạn/nhãn công bố tại lúc trả lời để không đổi lịch sử khi nguồn đổi; không lưu raw code/ERD vào trích dẫn |
+| `message_citation` | Chỉ gắn với tin assistant. revision_id bắt buộc; chunk_id có thể null khi MVP chưa có embedding. UNIQUE(message_id, position), unique có điều kiện cho message/chunk. Lưu trích đoạn/nhãn công bố tại lúc trả lời; không đưa raw code/ERD vào trích dẫn |
 | `issue_submission` | Đề nghị trước tiếp nhận, chưa có mã VD-. source_type ai_chat/external, không mang tên nền tảng. Chat: owner và origin_chat_message bắt buộc, external origin null. External: origin_source_record_id bắt buộc, owner/chat origin null. Unique từng origin. proposal_state: proposed/declined/processing/admitted/closed |
 | `submission_attempt` | Mỗi lần xác nhận/lọc là một bản ghi riêng. Payload là bản chụp **đúng nội dung user đã xem lại**. `UNIQUE(submission_id, request_key)`. decision: pending/pass/needs_detail/rejected/rate_limited. Xử lý lặp request không tạo attempt mới |
 | `submission_evidence` | Bằng chứng bổ sung từ nhiều tin/ảnh; đúng một trong chat_message/source_record_revision/file_asset không null. Không tự cho user đọc tất cả bằng chứng của submission hay issue |
@@ -210,7 +223,7 @@ erDiagram
 | `report_event` | Lịch sử riêng: correction/response/withdrawal. Chỉ chủ phản ánh tương ứng và staff được đọc. correction không thay submitted_payload gốc. Staff phản hồi chung phải tạo bản công bố riêng cho từng report phù hợp |
 | `issue_event` | Lịch sử nội bộ: phân công, chuyển trạng thái, kiểm chứng, phân loại, quyết định sơ bộ và liên kết công việc. Không trả vào DTO của user; không dùng một cờ frontend để che dữ liệu này |
 
-Các FK thay thế theo nguồn như `origin_chat_message_id`, `origin_source_record_id` hoặc các cột evidence có thể null theo quy tắc XOR; các FK auditor/assignee và trường chưa biết cũng có nullable riêng. Cardinality hình vẽ chưa biểu diễn đủ XOR giữa hai nguồn, cũng không thay thế các kiểm tra chéo bảng bên dưới.
+Các tham chiếu thay thế theo nguồn như origin_chat_message_id/origin_source_record_id hoặc các cột evidence có thể null theo XOR; auditor/assignee có nullable riêng. Cardinality không biểu diễn đủ XOR hoặc kiểm tra chéo bảng. Tất cả là liên kết UUID logic, không phải FK vật lý.
 
 ### Tại sao cần ba mức submission → report → issue?
 
@@ -229,15 +242,18 @@ Ví dụ hai người A/B cùng gặp một tình huống, thêm một phản á
 erDiagram
     knowledge_item {
         uuid id PK
-        text code UK
+        varchar code UK
         text source_kind
         text title
-        uuid created_by FK
+        uuid created_by
     }
     knowledge_revision {
         uuid id PK
-        uuid item_id FK
-        int revision_no
+        varchar code UK
+        uuid item_id
+        integer revision_no
+        text scope_type
+        text version_label
         text title_public
         text body_public
         jsonb sample_questions
@@ -248,19 +264,22 @@ erDiagram
         text status
         timestamptz valid_from
         timestamptz valid_until
-        uuid created_by FK
+        uuid created_by
         timestamptz published_at
     }
     knowledge_revision_release {
-        uuid revision_id PK,FK
-        uuid release_id PK,FK
+        uuid id PK
+        varchar code UK
+        uuid revision_id
+        uuid release_id
         timestamptz valid_from
         timestamptz valid_until
     }
     knowledge_review {
         uuid id PK
-        uuid revision_id FK
-        uuid reviewer_id FK
+        varchar code UK
+        uuid revision_id
+        uuid reviewer_id
         text action
         text reviewed_hash
         text note_internal
@@ -268,6 +287,7 @@ erDiagram
     }
     file_asset {
         uuid id PK
+        varchar code UK
         text object_key UK
         text original_name
         text mime_type
@@ -275,32 +295,36 @@ erDiagram
         text sha256
         text access_scope
         text scan_status
-        uuid uploaded_by FK
+        uuid uploaded_by
     }
     knowledge_revision_asset {
-        uuid revision_id PK,FK
-        uuid asset_id PK,FK
+        uuid id PK
+        varchar code UK
+        uuid revision_id
+        uuid asset_id
         text alt_text
         text caption_public
-        int position
+        integer position
     }
     knowledge_chunk {
         uuid id PK
-        uuid revision_id FK
-        int chunk_no
+        varchar code UK
+        uuid revision_id
+        integer chunk_no
         text body_public
         text content_hash
         text embedding_model
-        int embedding_dimensions
-        vector embedding
+        integer embedding_dimensions
+        float_array embedding
         text index_status
     }
     knowledge_provenance {
         uuid id PK
-        uuid revision_id FK
-        uuid source_revision_id FK
-        uuid source_record_revision_id FK
-        uuid issue_report_id FK
+        varchar code UK
+        uuid revision_id
+        uuid source_revision_id
+        uuid source_record_revision_id
+        uuid issue_report_id
         text reference_uri
         jsonb source_location_internal
         text analysis_internal
@@ -314,7 +338,7 @@ erDiagram
     knowledge_revision ||--o{ knowledge_revision_asset : contains
     file_asset ||--o{ knowledge_revision_asset : referenced_by
     knowledge_revision ||--o{ knowledge_chunk : indexed_as
-    knowledge_chunk ||--o{ message_citation : cited_by
+    knowledge_chunk o|--o{ message_citation : cited_by
     knowledge_revision ||--o{ knowledge_provenance : grounded_in
     source_revision o|--o{ knowledge_provenance : source_evidence
     source_record_revision o|--o{ knowledge_provenance : external_evidence
@@ -327,11 +351,11 @@ erDiagram
 |---|---|
 | `knowledge_item` | Định danh ổn định; source_kind faq/function_snapshot/external_context. Không coi ba loại có cùng quyền xác lập nghiệp vụ |
 | `knowledge_revision` | `UNIQUE(item_id, revision_no)`. Chứa bản nội dung có thể công bố, câu hỏi mẫu, điều kiện, audience và hash. audience_roles là JSON array không rỗng, chỉ gồm user/technician/admin và được backend kiểm tra theo schema cố định. authority_level confirmed_business/observed_behavior/unverified_context. status draft/pending_review/approved/published/rejected/expired |
-| `knowledge_revision_release` | Phiên bản triển khai nào được dùng revision này; PK kép, thời hạn áp dụng riêng từng release. Không dùng chuỗi phiên bản để so sánh lớn/nhỏ hay suy ra tương thích. Một revision có thể áp dụng nhiều release đã kiểm chứng |
+| `knowledge_revision_release` | Mapping mở rộng sau: UUID PK và code UNIQUE, thêm UNIQUE(revision_id, release_id), thời hạn riêng từng release. Không dùng chuỗi phiên bản để suy tương thích. scope_type=manual của MVP không bắt buộc mapping này |
 | `knowledge_review` | Lưu submit/approve/reject/publish/expire, người thực hiện, thời điểm và hash đã duyệt. Chỉ admin duyệt/công bố/cho hết hiệu lực. Technician chỉ soạn và gửi duyệt |
 | `file_asset` | Metadata object storage, không lưu ảnh binary trong PostgreSQL. object_key bất biến; nội dung mới tạo asset mới. access_scope internal/restricted_public; không có bucket URL công khai vô điều kiện |
 | `knowledge_revision_asset` | Danh sách ảnh, thứ tự và alt text thuộc **revision**, không gắn trực tiếp vào knowledge_item. Thay ảnh/alt/caption tạo revision cần duyệt lại |
-| `knowledge_chunk` | Chỉ lập chỉ mục phần công bố đã khử nhạy cảm; giữ revision, model, kích thước và hash. `UNIQUE(revision_id, chunk_no, embedding_model)`. Kích thước vector chốt sau chọn model; không trộn vector khác model/kích thước vào cùng phép so sánh |
+| `knowledge_chunk` | Chỉ phần công bố đã khử nhạy cảm. UNIQUE(revision_id, chunk_no), một model/embedding hiện hành mỗi chunk. DDL dùng double precision[] tùy chọn, chưa yêu cầu pgvector; chốt model/kích thước và migration vector/index sau |
 | `knowledge_provenance` | Metadata nguồn và phân tích nội bộ nằm riêng khỏi body_public. Mỗi hàng tham chiếu đúng một trong source_revision/source_record_revision/issue_report/reference_uri; nhiều bằng chứng dùng nhiều hàng |
 
 ### Bất biến của bản đã duyệt
@@ -349,6 +373,7 @@ erDiagram
 erDiagram
     product_release {
         uuid id PK
+        varchar code UK
         text environment
         text deployment_key
         text display_version
@@ -357,6 +382,7 @@ erDiagram
     }
     source_revision {
         uuid id PK
+        varchar code UK
         text repository_key
         text commit_sha
         text erd_hash
@@ -364,18 +390,21 @@ erDiagram
         timestamptz indexed_at
     }
     release_source {
-        uuid release_id PK,FK
-        text service_key PK
-        uuid source_revision_id FK
+        uuid id PK
+        varchar code UK
+        uuid release_id
+        text service_key
+        uuid source_revision_id
     }
     source_platform {
         uuid id PK
-        text code UK
+        varchar code UK
         text display_name
     }
     source_connection {
         uuid id PK
-        uuid platform_id FK
+        varchar code UK
+        uuid platform_id
         text namespace_key
         text adapter_key
         text adapter_version
@@ -389,7 +418,8 @@ erDiagram
     }
     source_channel {
         uuid id PK
-        uuid connection_id FK
+        varchar code UK
+        uuid connection_id
         text external_channel_id
         text channel_type
         text external_parent_id
@@ -400,8 +430,9 @@ erDiagram
     }
     source_record {
         uuid id PK
-        uuid channel_id FK
-        uuid current_revision_id FK
+        varchar code UK
+        uuid channel_id
+        uuid current_revision_id
         text external_record_id
         text record_type
         text external_sender_id
@@ -413,8 +444,9 @@ erDiagram
     }
     source_record_revision {
         uuid id PK
-        uuid record_id FK
-        uuid ingestion_event_id FK
+        varchar code UK
+        uuid record_id
+        uuid ingestion_event_id
         text external_version_key
         text operation
         text body_internal
@@ -427,10 +459,11 @@ erDiagram
     }
     ingestion_event {
         uuid id PK
-        uuid connection_id FK
+        varchar code UK
+        uuid connection_id
         text event_key
         text event_type
-        uuid raw_payload_asset_id FK
+        uuid raw_payload_asset_id
         text payload_hash
         text adapter_version
         text policy_version
@@ -440,11 +473,12 @@ erDiagram
     }
     background_job {
         uuid id PK
+        varchar code UK
         text job_type
         text dedupe_key UK
         jsonb input_refs
         text status
-        int attempt_count
+        integer attempt_count
         timestamptz next_run_at
         timestamptz lease_until
         text lease_owner
@@ -453,10 +487,11 @@ erDiagram
     }
     app_setting_revision {
         uuid id PK
-        int revision_no UK
+        varchar code UK
+        integer revision_no UK
         jsonb settings
         text change_reason
-        uuid changed_by FK
+        uuid changed_by
         timestamptz created_at
     }
     product_release ||--o{ release_source : deploys
@@ -497,7 +532,7 @@ erDiagram
 
 Với nguồn external, submission lưu định danh record ổn định và bắt buộc có evidence trỏ tới source_record_revision đã dùng để đề nghị/lọc. Backend kiểm tra revision đó thuộc origin_source_record_id. Cả evidence và provenance giữ đúng revision, không đọc lại “bản mới nhất” để dựng lại chứng cứ cũ. Bản ghi sửa/xóa ngoài nền tảng tạo revision mới và kích hoạt rà soát; không tự ghi đè payload của accepted_attempt hoặc tự tạo report thứ hai cho cùng origin.
 
-`source_record.state` và current_revision_id là projection từ revision đã xác minh thứ tự, cập nhật atomically khi khóa record. Thêm `UNIQUE(record_id, id)` trên source_record_revision và FK kép `(id, current_revision_id)` tới `(record_id, id)` để không trỏ revision của record khác. Khi khởi tạo, tạo record với current null, thêm revision rồi cập nhật pointer trong cùng transaction. Không dùng thời điểm nhận webhook để cho một sự kiện cũ ghi đè bản mới. Nếu adapter không chứng minh được thứ tự, ordering_status=ambiguous, tạm giữ để đối soát hoặc đọc lại nguồn; không dùng bản đó như trạng thái hiện hành đã xác nhận.
+`source_record.state` và current_revision_id là projection từ revision đã xác minh thứ tự, cập nhật atomically khi khóa record. Backend xác minh current_revision_id tồn tại và revision.record_id đúng với record hiện hành; không tạo FK kép hoặc trigger. Khi khởi tạo, tạo record với current null, thêm revision rồi cập nhật pointer trong cùng transaction. Không dùng thời điểm nhận webhook để cho sự kiện cũ ghi đè bản mới. Nếu adapter chưa chứng minh được thứ tự, ordering_status=ambiguous và đối soát trước khi cập nhật bản hiện hành.
 
 ## 6. Quy tắc phải thực thi khi viết backend
 
@@ -513,7 +548,7 @@ Với nguồn external, submission lưu định danh record ổn định và b�
 - Chat attempt có decision pass bắt buộc confirmed_by = submission.owner_id, confirmed_at khác null và consent_payload_hash = payload_hash. Backend tạo hash từ payload canonical; không tin hash/client userId tự khai.
 - Chỉ sau xác nhận mới chạy luồng lọc và nhận report. Request chủ động bấm nút gửi cũng đi qua cùng kiểm tra. Nội dung sửa sau xác nhận là attempt/payload mới và phải xác nhận lại.
 - External attempt dùng chính sách kết nối/kênh đã xác minh và kết quả lọc, không yêu cầu consent của app_user giả. Nhật ký thu thập giữ connection/channel, authorization_reference và policy version trong hard_check_results; chưa có quyền thì không nhập dữ liệu.
-- Report chỉ nhận attempt pass, cùng submission; thêm `UNIQUE(submission_id, id)` trên submission_attempt và dùng composite FK `(submission_id, accepted_attempt_id)` tới `(submission_id, id)` đó. Điều kiện pass/owner/role là ràng buộc chéo bảng: cần transaction và kiểm tra backend hoặc trigger phù hợp.
+- Report chỉ nhận attempt pass, cùng submission; backend tải accepted_attempt_id và xác minh submission_id của attempt đúng với report, cùng điều kiện pass/owner/role trong transaction. Không khai báo FK kép hoặc trigger kiểm tra thay backend.
 - Retry dùng request_key và unique constraints. Tìm trùng ngữ nghĩa không xóa phản ánh: thêm report mới vào issue đã có sau khi xác minh điều kiện tương đồng. Nội dung quá mơ hồ trở về needs_detail, không tạo issue/report.
 - Đếm tần suất từ attempt của tài khoản trong cửa sổ chính sách; thực thi giới hạn atomically để hai request đồng thời không cùng vượt rào. Ngưỡng là cấu hình được chốt qua pilot.
 
@@ -535,9 +570,9 @@ Với nguồn external, submission lưu định danh record ổn định và b�
 
 | Nhóm | Cơ chế |
 |---|---|
-| PK/FK | NOT NULL cho quan hệ bắt buộc. ON DELETE RESTRICT với chứng cứ, bản duyệt, accepted_attempt, report và issue; vô hiệu hóa/ẩn theo chính sách thay vì cascade xóa lịch sử |
-| XOR nguồn | CHECK chỉ một source FK được điền ở submission/evidence/provenance, kèm CHECK source_type phù hợp |
-| Sở hữu tin | FK kép `(session_id, reply_to_message_id)` tới `(session_id, id)` hoặc kiểm tra tương đương để reply không trỏ sang phiên khác |
+| PK/code và liên kết | UUID PK, code NOT NULL UNIQUE. Không FK/cascade/trigger; backend kiểm tra tồn tại, ownership, trạng thái và chặn xóa dữ liệu đang được dùng |
+| XOR nguồn | CHECK trong từng hàng: chỉ một tham chiếu nguồn được điền ở submission/evidence/provenance, source_type phù hợp |
+| Sở hữu tin | Backend xác minh reply_to_message_id cùng phiên, đúng quyền. SQL không kiểm tra quan hệ này |
 | Truy vấn chính | session `(owner_id,last_activity_at DESC,id)`; message `(session_id,sequence_no)`; issue `(status,created_at DESC,id)` và `(assignee_id,status,created_at)` |
 | Lịch sử/tiếp nhận | submission `(owner_id,created_at DESC,id)`; attempt `(submission_id,created_at)` và request unique; report `(issue_id,state)`; report_event `(report_id,created_at,id)`; issue_event `(issue_id,created_at,id)` |
 | Tri thức | revision `(item_id,revision_no)` unique; revision_release `(release_id,revision_id)`; chunk `(revision_id,index_status)`; provenance theo revision_id |
@@ -546,7 +581,7 @@ Với nguồn external, submission lưu định danh record ổn định và b�
 
 Mỗi bảng bổ sung `created_at` nếu chưa vẽ. Bảng có cập nhật thêm `updated_at`; bảng nghiệp vụ do người thao tác thêm created_by/updated_by khi phù hợp. Với event hệ thống, actor_id được phép null và bổ sung actor_type=system cùng correlation_id; với thao tác người dùng actor_id bắt buộc. Bảng nối không cần timestamp trùng nếu không có ý nghĩa riêng.
 
-PostgreSQL có PK/FK/UNIQUE/CHECK, nhưng CHECK không phù hợp để xác minh trạng thái ở bảng khác; các bất biến chéo bảng ở trên phải được thiết kế rõ ở transaction/backend hoặc trigger. Tham khảo [PostgreSQL Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html). Khóa hàng dùng trong luồng rút/bắt đầu xử lý dựa trên [PostgreSQL Explicit Locking](https://www.postgresql.org/docs/current/explicit-locking.html). Lựa chọn vector/index cần bám đúng model và dữ liệu thực tế theo [pgvector](https://github.com/pgvector/pgvector).
+PostgreSQL có PK/UNIQUE/CHECK; CHECK không phù hợp để xác minh trạng thái ở bảng khác. Theo yêu cầu không dùng FK, các bất biến chéo bảng thuộc trách nhiệm transaction/backend, không thêm trigger để kiểm soát ngầm. Tham khảo [PostgreSQL Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html). Khóa hàng dùng trong luồng rút/bắt đầu xử lý dựa trên [PostgreSQL Explicit Locking](https://www.postgresql.org/docs/current/explicit-locking.html). Lựa chọn vector/index cho giai đoạn sau tham khảo [pgvector](https://github.com/pgvector/pgvector).
 
 ## 7. Trạng thái và tình huống nghiệm thu ERD
 
@@ -588,6 +623,6 @@ Các tình huống cần kiểm thử khi triển khai database/backend:
 - Nếu sản phẩm hỗ trợ nhiều tổ chức với dữ liệu tách biệt, phải bổ sung tenant_id và ràng buộc tenant vào ownership/release/knowledge/issue ngay trước migration đầu tiên. Đây chưa phải yêu cầu được xác nhận hiện tại.
 - `app_setting_revision` là lịch sử cấu hình nghiệp vụ; không chứa tính năng “đặt lại demo” xóa dữ liệu production.
 
-Tài liệu này xác minh độ phủ yêu cầu và quan hệ logic; chưa kiểm thử migration trên PostgreSQL hoặc bảo đảm một bản DDL chưa được viết.
+SQL khởi tạo và cách chạy nằm tại [database/README.md](../database/README.md). Đây chưa phải schema đã cài vào database của bạn. Khi không có FK, các kiểm tra chéo bảng mô tả ở trên thuộc trách nhiệm backend/người quản lý dữ liệu.
 
 Đã kiểm tra cấu trúc tài liệu: 30 thực thể có định nghĩa, 30 mục từ điển dữ liệu, không có quan hệ tham chiếu tới tên bảng chưa định nghĩa. Cả bốn sơ đồ ERD và sơ đồ luồng connector được parse và render thành SVG bằng Mermaid 10.9.1 offline trong Chrome; không có lỗi JavaScript ghi nhận. Sơ đồ vận hành đã được render lại sau khi bổ sung current_revision_id.

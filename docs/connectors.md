@@ -2,6 +2,8 @@
 
 Trạng thái: hợp đồng thiết kế backend, chưa có connector triển khai. Yêu cầu bổ sung ngày 02/11/2026: thêm được nguồn như Discord, Telegram và các nền tảng khác, không thiết kế lõi theo Zalo. Tài liệu này bổ sung [nghiệp vụ](nghiep-vu.md), [tech stack](tech-stack.md) và [ERD](erd.md).
 
+Connector thuộc giai đoạn mở rộng; [MVP trước mắt](mvp-scope.md) chỉ dùng mẫu tri thức nhập thủ công. Các liên kết ID trong tài liệu là UUID logic, không khai báo foreign key; toàn vẹn liên bảng do backend/người quản lý dữ liệu tự kiểm soát.
+
 [Mở sơ đồ luồng connector dạng SVG](diagrams/connector-flow.svg).
 
 ## 1. Ranh giới trách nhiệm
