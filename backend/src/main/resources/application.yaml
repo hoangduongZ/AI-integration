@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: ai-support
+  datasource:
+    url: ${AI_DB_URL}
+    username: ${AI_DB_USERNAME}
+    password: ${AI_DB_PASSWORD}
+  sql:
+    init:
+      mode: never
+
+server:
+  port: ${AI_HTTP_PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
